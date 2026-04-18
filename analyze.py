@@ -22,18 +22,26 @@ def magnitude_vs_impact(df: pd.DataFrame) -> pd.DataFrame:
     Bin earthquakes by 0.5-magnitude intervals and compute median deaths,
     median damage, and total records per bin.
 
-    Returns a DataFrame indexed by magnitude bin with columns:
-        median_deaths, median_damage_millions, total_events, pct_with_deaths
+    Uses damage_order (1–4 severity scale) as the primary damage column since
+    it is present in the analysis subset; falls back to damage_millions if available.
+
+    Returns a DataFrame with columns:
+        mag_bin, median_deaths, median_damage_order, median_damage_millions,
+        total_events, total_deaths, pct_with_deaths
     """
     df = df.copy()
     df["mag_bin"] = pd.cut(df["magnitude"], bins=np.arange(0, 10.5, 0.5))
 
-    grouped = df.groupby("mag_bin", observed=True, sort=True).agg(
-        median_deaths        =("deaths",          "median"),
-        median_damage_millions=("damage_millions", "median"),
-        total_events         =("magnitude",        "count"),
-        total_deaths         =("deaths",           "sum"),
-    )
+    agg_dict = {
+        "median_deaths":       ("deaths",        "median"),
+        "median_damage_order": ("damage_order",  "median"),
+        "total_events":        ("magnitude",      "count"),
+        "total_deaths":        ("deaths",         "sum"),
+    }
+    if "damage_millions" in df.columns:
+        agg_dict["median_damage_millions"] = ("damage_millions", "median")
+
+    grouped = df.groupby("mag_bin", observed=True, sort=True).agg(**agg_dict)
     grouped["pct_with_deaths"] = (
         df.groupby("mag_bin", observed=True, sort=True)["deaths"]
         .apply(lambda s: (s > 0).mean())
@@ -142,16 +150,18 @@ def yearly_trends(df: pd.DataFrame) -> pd.DataFrame:
     """
     if "year" not in df.columns:
         raise ValueError("DataFrame must have a 'year' column — run clean_merged() first.")
-    return (
-        df.groupby("year")
-        .agg(
-            total_deaths         =("deaths",          "sum"),
-            total_damage_millions=("damage_millions",  "sum"),
-            total_events         =("magnitude",        "count"),
-            median_magnitude     =("magnitude",        "median"),
-        )
-        .reset_index()
-    )
+    agg_dict = {
+        "total_deaths":    ("deaths",    "sum"),
+        "total_events":    ("magnitude", "count"),
+        "median_magnitude":("magnitude", "median"),
+    }
+    if "damage_millions" in df.columns:
+        agg_dict["total_damage_millions"] = ("damage_millions", "sum")
+
+    result = df.groupby("year").agg(**agg_dict).reset_index()
+    if "total_damage_millions" not in result.columns:
+        result["total_damage_millions"] = float("nan")
+    return result
 
 
 def rolling_average(yearly_df: pd.DataFrame, window: int = 5) -> pd.DataFrame:

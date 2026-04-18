@@ -76,10 +76,10 @@ with col1:
 
 with col2:
     fig = px.bar(
-        q1.dropna(subset=["median_damage_millions"]),
-        x="mag_bin", y="median_damage_millions",
-        title="Median Damage (M$) by Magnitude Bin",
-        labels={"mag_bin": "Magnitude", "median_damage_millions": "Median Damage (M$)"},
+        q1.dropna(subset=["median_damage_order"]),
+        x="mag_bin", y="median_damage_order",
+        title="Median Damage Severity (1–4 scale) by Magnitude Bin",
+        labels={"mag_bin": "Magnitude", "median_damage_order": "Median Damage Order"},
         color_discrete_sequence=["#e07b2e"],
     )
     st.plotly_chart(fig, width='stretch')
