@@ -3,7 +3,7 @@ app.py — Streamlit dashboard for earthquake_analysis.
 
 Run:  streamlit run app.py
 
-The app loads data/cleaned.csv (produced by scripts/run_pipeline.py) and
+The app loads data/analysis_subset.csv (produced by scripts/run_pipeline.py) and
 displays interactive charts for each of the four research questions.
 """
 
@@ -13,8 +13,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-sys.path.insert(0, os.path.dirname(__file__))
-from earthquake_analysis.analyze import (
+from analyze import (
     magnitude_vs_impact,
     depth_vs_impact,
     regional_impact,
